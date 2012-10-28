@@ -1,0 +1,95 @@
+<div class="container">
+
+  <div class="row row-title">
+    <div class="span12">
+      <h1>{{clientName}}</h1>
+    </div>
+  </div>
+
+  <div class="datatables-wrapper">
+
+    <div class="datatables-toolbar datatables-widget-header">
+      <div class="datatables-filter">
+        <label>Search operator name: <input type="text" ng-model="searchText"></label>
+      </div>
+      <div class="datatables-paginate">
+        <a tabindex="0" class="datatables-button datatables-state-disabled">First
+        </a><a tabindex="0" class="datatables-button datatables-state-disabled">Previous
+        </a><span><a tabindex="0" class="datatables-button datatables-state-disabled">1
+        </a></span><a tabindex="0" class="datatables-button datatables-state-disabled">Next
+        </a><a tabindex="0" class="datatables-button datatables-state-disabled">Last</a>
+      </div>
+    </div>
+
+    <table class="table table-striped table-hover" style="margin-bottom:0">
+      <thead>
+        <tr>
+          <th style="text-align:left">Operator name</th>
+          <th style="text-align:left">Date Created</th>
+          <th style="text-align:left">Latest Login</th>
+          <th style="text-align:left">Assignments passed</th>
+          <th></th>
+          <th style="text-align:left">Details</th>
+          <th style="text-align:left">Diploma</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr ng-repeat="operator in operators | filter:searchText">
+          <td><a href="#/operators/{{operator.id}}"><b>{{operator.name}}</b></a></td>
+          <td>{{operator.created | date:'yyyy-MM-dd' }}</td>
+          <td>{{operator.lastLogin | date:'yyyy-MM-dd' }}</td>
+          <td>
+            <div ng-show="operator.passedAll">
+              <i class="icon-star"></i>
+              All assignments passed since
+              <span class="label label-success">{{operator.lastLogin | date:'yyyy-MM-dd' }}</span>
+            </div>
+            <div ng-hide="operator.passedAll">
+              <a href="#/operators/{{operator.id}}" style="text-decoration: none;">
+                <div class="progress progress-success progress-striped progress-no-margin">
+                  <div class="bar" style="width:{{operator.progress}}%;"></div>
+                </div>
+              </a>
+            </div>
+          </td>
+          <td>
+            <div ng-hide="operator.passedAll">
+              <a href="#/operators/{{operator.id}}" style="text-decoration: none;">
+                <span class="badge">{{operator.assignmentsPassed}}/{{operator.assignmentsCount}}</span>
+              </a>
+            </div>
+          </td>
+          <td class="center">
+            <a class="btn" href="#/operators/{{operator.id}}">View details</a>
+          </td>
+          <td>
+            <a ng-show="operator.passedAll"
+              href="#" 
+              onclick="return false" 
+              class="btn btn-inverse" 
+              rel="tooltip" 
+              data-placement="top" 
+              data-original-title="Print diploma">
+              <i class="icon-print icon-white"></i>
+            </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="datatables-toolbar datatables-widget-header">
+      <div class="datatables-filter">
+        <label>Search operator name: <input type="text" ng-model="searchText"></label>
+      </div>
+      <div class="datatables-paginate">
+        <a tabindex="0" class="datatables-button datatables-state-disabled">First
+        </a><a tabindex="0" class="datatables-button datatables-state-disabled">Previous
+        </a><span><a tabindex="0" class="datatables-button datatables-state-disabled">1
+        </a></span><a tabindex="0" class="datatables-button datatables-state-disabled">Next
+        </a><a tabindex="0" class="datatables-button datatables-state-disabled">Last</a>
+      </div>
+    </div>
+
+  </div>
+
+</div>

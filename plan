@@ -1,0 +1,52 @@
+Konton (accounts)
+Transaktioner (transactions)
+Verifikationer (verifications)
+
+users
+
+
+
+En lista över konton
+En lista över transaktioner
+
+
+Kontodetailjer.
+Transaktionsdetaljer (lista över förändringarna). Namn och datum.
+
+
+Varje konto har ett antal egenskaper. Namn till att börja med.
+Varje transaktion har ett antal förändringar (minst en). Samt metadata så som namn och datum.
+En förändring är ett konto och ett värde.
+
+
+
+
+
+
+
+
+Konton:
+* namn
+* lista med personer (bara för tillgångar och skulder):
+  - personnamn
+  - värdefaktor (0.5 för familjen. 0.6 för bolagsutdelning. etc)
+* typ (tillgång, skuld, intäkt, utgift)
+* taggar (likvid, kontanter, bankkonto, etc...)
+
+
+
+Poster:
+* Datum
+* Beskrivning
+* lista med konton:
+  - referens till kontot
+  - värde
+
+
+
+Presentera:
+* Balansen för varje konto (dvs summan av alla transaktioner genom dem)
+* Balansen för varje post
+* Vilka betalningar som personerna som är registrerade behöver göra till varandra för att jämna ut skulder
+* Summa in/ut för varje person
+* Summa likvider/illikvider/totalt per person
