@@ -10,7 +10,7 @@
     "node": "0.8.x"
   },
   "dependencies": {
-    "manikin-mongodb": "0.6.2",
+    "manikin-mongodb": "0.6.3",
     "nconf": "0.5.x",
     "request": "2.10.x",
     "locke": "0.4.2",

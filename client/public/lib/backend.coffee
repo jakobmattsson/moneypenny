@@ -46,14 +46,40 @@ exports.connect = (module, lockeClient) ->
 
   ## Public API
   ## ==========
-  getAuthorized: ($http, path) ->
-    $http
-      method: 'GET'
-      url: backend + path
-      headers:
-        Authorization: makeBaseAuth(store.get('auth')?.username, store.get('auth')?.password)
+  auth: 
+    get: ($http, path) ->
+      $http
+        method: 'GET'
+        url: backend + path
+        headers:
+          Authorization: makeBaseAuth(store.get('auth')?.username, store.get('auth')?.password)
+
+    put: ($http, path, data) ->
+      $http
+        method: 'PUT'
+        url: backend + path
+        data: data
+        headers:
+          Authorization: makeBaseAuth(store.get('auth')?.username, store.get('auth')?.password)
+
+    post: ($http, path, data) ->
+      $http
+        method: 'POST'
+        url: backend + path
+        data: data
+        headers:
+          Authorization: makeBaseAuth(store.get('auth')?.username, store.get('auth')?.password)
+
+    del: ($http, path) ->
+      $http
+        method: 'DELETE'
+        url: backend + path
+        headers:
+          Authorization: makeBaseAuth(store.get('auth')?.username, store.get('auth')?.password)
 
   logout: -> store.remove('auth')
+
+  isAuthenticated: -> store.get('auth')?
 
   login: (http, username, password, callback) ->
     return callback('Enter username and password') if !username || !password

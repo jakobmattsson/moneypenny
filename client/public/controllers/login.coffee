@@ -1,4 +1,5 @@
 window.ctrlLogin = ($scope, $http) ->
+  window.location = '#/accounts' if isAuthenticated()
 
   $scope.username = ''
   $scope.password = ''
@@ -6,6 +7,5 @@ window.ctrlLogin = ($scope, $http) ->
   $scope.login = ->
     login $http, $scope.username, $scope.password, (err) ->
       return alert(err) if err
-      alert("ok!")
-      window.location = "#/operators"
+      window.location = "#/accounts"
     false
