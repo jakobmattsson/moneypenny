@@ -50,3 +50,15 @@ Presentera:
 * Vilka betalningar som personerna som är registrerade behöver göra till varandra för att jämna ut skulder
 * Summa in/ut för varje person
 * Summa likvider/illikvider/totalt per person
+
+
+
+
+
+
+
+
+            
+            <select>
+              <option ng-repeat="account in accounts" ng-selected="transaction.selected" value="{{account.id}}">{{account.name}}</option>
+            </select>

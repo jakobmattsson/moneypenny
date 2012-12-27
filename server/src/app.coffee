@@ -38,7 +38,8 @@ models =
     defaultSort: 'name'
     fields:
       name: { type: 'string' }
-  
+      accountTags: { type: 'hasMany', model: 'tags' }
+
   verifications:
     auth: defaultAuth()
     owners: user: 'users'
@@ -47,7 +48,7 @@ models =
       name: { type: 'string' }
       comment: { type: 'string' }
       date: { type: 'date' }
-  
+
   transactions:
     auth: defaultAuth()
     owners: verification: 'verifications'
@@ -63,7 +64,7 @@ models =
   
   tags:
     auth: defaultAuth()
-    owners: account: 'accounts'
+    owners: user: 'users'
     defaultSort: 'name'
     fields:
       name: { type: 'string' }

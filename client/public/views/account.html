@@ -8,4 +8,20 @@
     </div>
   </div>
 
+  <!-- FÅ DESSA ATT LÄSA IN LADDAT STATE ORDENTLIGT!!! -->
+
+  <select multiple ng-model="accountTagIds">
+    <option ng-repeat="tag in tags" ng-selected="selFun({{tag}})" value="{{tag.id}}">{{tag.name}}</option>
+  </select>
+
+  <select
+    data-placeholder="Choose a Recipient"
+    multiple class="span4 chzn-select"
+    chosen
+    chosen-source="tags"
+    ng-model="accountTags"
+    ng-change="updateAccountTags()"
+    ng-options="tag.name for tag in tags">
+  </select>
+
 </div>
