@@ -1,150 +1,107 @@
 Q = require 'q'
+url = require 'url'
 path = require 'path'
-manikin = require 'manikin-mongodb'
+http = require 'http'
 rester = require 'rester'
-async = require 'async'
 nconf = require 'nconf'
 _ = require 'underscore'
-_.mixin require 'underscore.plus'
 express = require 'express'
-lockeClient = require 'locke-client'
+lockeClient = require 'locke-client-jsonrpc'
 resterTools = require 'rester-tools'
-
-
-
-# Model support
-# =============================================================================
-
-defaultAuth = (targetProperty) -> (user) ->
-  if user?.id then  _.makeObject(targetProperty || 'user', user.id) else null
-
-
-
-
-# Models
-# =============================================================================
-
-models =
-  users:
-    auth: defaultAuth 'id'
-    owners: {}
-    fields:
-      email: { type: 'string', required: true, unique: true }
-      name: { type: 'string', default: '' }
-
-  accounts:
-    auth: defaultAuth()
-    owners: user: 'users'
-    defaultSort: 'name'
-    fields:
-      name: { type: 'string' }
-      accountTags: { type: 'hasMany', model: 'tags' }
-
-  verifications:
-    auth: defaultAuth()
-    owners: user: 'users'
-    defaultSort: 'date'
-    fields:
-      name: { type: 'string' }
-      comment: { type: 'string' }
-      date: { type: 'date' }
-
-  transactions:
-    auth: defaultAuth()
-    owners: verification: 'verifications'
-    fields:
-      value: { type: 'number' }
-      account:
-        type: 'hasOne'
-        model: 'accounts'
-        validation: (transaction, account, callback) ->
-          if transaction.user.toString() != account.user.toString()
-            callback 'The account does not belong to the same user as the verification'
-          callback()
-  
-  tags:
-    auth: defaultAuth()
-    owners: user: 'users'
-    defaultSort: 'name'
-    fields:
-      name: { type: 'string' }
+socketio = require 'socket.io'
+async = require 'async'
+models = require './models'
+custom1 = require './custom1'
 
 
 
 # Application entry point
 # =============================================================================
 
-exports.run = (settings, callback) ->
+exports.run = ({ locke, verbose, db }, settings = {}, callback = ->) ->
+
+  verbose ?= true
 
   # Reading and echoing the configuration for the application
-  settings ?= {}
-  callback ?= ->
-
-  nconf.env().argv().overrides(settings).defaults
+  configFile = path.resolve(__dirname, '../config/config.json')
+  nconf.overrides(settings).env().argv().file({ file: configFile }).defaults
     mongo: 'mongodb://localhost/moneypenny'
-    PORT: settings.port || 3003
+    NODE_ENV: 'development'
+    PORT: 8075
+    bootstrapAdmin: 'admin0@bootstrap'
 
-  console.log "Starting up..."
-  console.log "* mongo: " + nconf.get('mongo')
-  console.log "* environment: " + process.env.NODE_ENV
-  console.log "* port: " + nconf.get('PORT')
-
-  # Creating the interface to the database
-  db = manikin.create()
+  if verbose
+    console.log "Starting up..."
+    console.log "* mongo: " + nconf.get('mongo')
+    console.log "* environment: " + nconf.get('NODE_ENV')
+    console.log "* port: " + nconf.get('PORT')
+    console.log "* bootstrapAdmin: " + nconf.get('bootstrapAdmin')
 
   # Setting up the express app
-  app = express.createServer()
+  app = express()
+  app.use resterTools.replaceContentTypeMiddleware({ 'text/plain': 'application/json', '': 'application/json' }) # required for XDomainRequest
+  app.use resterTools.corsMiddleware()
   app.use express.bodyParser()
+  app.use express.methodOverride() # allows PUT (and DELETE) to be performed by posting _method=PUT in the post-body
   app.use express.responseTime()
   app.use resterTools.versionMid path.resolve(__dirname, '../package.json')
 
+  # Setting up the socket.io server
+  server = http.createServer(app)
+  io = socketio.listen(server, { log: verbose })
+  io.configure ->
+    io.set("transports", ["xhr-polling"])
+    io.set("polling duration", 10)
+
   # Setting up locke
-  sharpLocke = process.env.NODE_ENV == 'production'
-  locke = lockeClient(if sharpLocke then 'https://locke.nodejitsu.com' else 'http://localhost:6002') # TODO: must set up https for lockeapp.com so the proper DNS (abstracting underlying provider) can be used
+  lockeAppName = 'moneypenny'
 
   # Defining where user are stored in the models and how to get them
   userModels = [
     table: 'users'
     usernameProperty: 'email'
-    callback: (r) -> { id: r.id }
+    callback: (x) -> { id: x.id }
   ]
   getUserFromDb = resterTools.authUser(
-    resterTools.authenticateWithBasicAuthAndLocke(locke, 'moneypenny')
+    resterTools.authenticateWithBasicAuthAndLocke(locke, lockeAppName)
     resterTools.getAuthorizationData(db, userModels)
   )
 
-  # Registering all models
-  db.defModels models
-
   # Connecting to the database
-  Q.ninvoke(db, 'connect', nconf.get('mongo'))
+  Q.ninvoke(db, 'connect', nconf.get('mongo'), models)
   .fail ->
     console.log "ERROR: Could not connect to db"
 
-  #  Adding users to locke if it's being mocked
-  .then ->
-    return if sharpLocke
-    Q.ninvoke(resterTools, 'getAllUsernames', db, userModels)
-    .then (usernames) ->
-      Q.ninvoke(resterTools, 'createLockeUsers', locke, 'moneypenny', 'summertime', usernames)
-    .end()
-
   # Adding custom routes to the app
   .then ->
+    manikinConnectionData = nconf.get('mongo')
 
-    app.get '/auth', (req, res) ->
-      getUserFromDb req, (err, status) ->
-        if req.headers.origin
-          res.header 'Access-Control-Allow-Origin', req.headers.origin
-          res.header 'Access-Control-Allow-Credentials', 'true'
-          res.header 'Access-Control-Allow-Headers', req.headers['access-control-request-headers'] || 'Authorization' # Maybe these: 'origin, authorization, accept' or req.headers['access-control-allow-headers']
-          res.header 'Access-Control-Allow-Methods', 'POST, GET, OPTIONS, DELETE, PUT'
-        res.json({ authenticated: status? })
+    def = (method, path, cb) ->
+      app[method] path, (req, res) ->
+        cb { req, db: db }, (err, data) ->
+          if err?
+            if err instanceof Error
+              res.json({ err: err.message?.toString() || err.toString() })
+            else
+              res.json({ err: err })
+          else
+            res.json(data)
+
+    secure = (f) ->
+      (args, callback) ->
+        getUserFromDb args.req, (err, usr) ->
+          return callback('invalid user') if err?
+          db2 = rester.acm.build(args.db, models, usr)
+          f(_.extend({}, args, { acdb: db2 }), callback)
+
+    customArgs = {app, db, getUserFromDb, io, models, manikinConnectionData, def, secure}
+    [custom1].forEach (custom) ->
+      custom.routes(customArgs)
 
   # Starting up the server
   .then ->
-    rester.exec app, db, getUserFromDb, models
-    app.listen nconf.get('PORT')
-    console.log "Ready!"
-    callback()
-  .end()
+    rester.exec app, db, models, getUserFromDb, { verbose }
+    server.listen nconf.get('PORT')
+    console.log("Ready!") if verbose
+    callback(null, server)
+  .done()

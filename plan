@@ -52,13 +52,3 @@ Presentera:
 * Summa likvider/illikvider/totalt per person
 
 
-
-
-
-
-
-
-            
-            <select>
-              <option ng-repeat="account in accounts" ng-selected="transaction.selected" value="{{account.id}}">{{account.name}}</option>
-            </select>
